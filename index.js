@@ -64,6 +64,7 @@ function eventListItem(conventionEvent) {
   eventLink.href = "#selected";
 
   eventItem.addEventListener("click", () => getEvent(conventionEvent.id));
+  eventItem.id = "p" + conventionEvent.id;
   eventItem.append(eventLink);
   return eventItem;
 }
@@ -92,6 +93,7 @@ function selectedEventSection() {
     `;
     return section;
   }
+  console.log(document.querySelector("ul"));
   section.innerHTML = `
   <h4>${selectedEvent.name} #${selectedEvent.id}</h4>
   <br>
@@ -100,6 +102,7 @@ function selectedEventSection() {
   <br>
   <p>${selectedEvent.description}</p>
 `;
+  document.querySelector("#p" + selectedEvent.id).style.font = "italic small-caps bold 16px/2 arial";
   return section;
 }
 
