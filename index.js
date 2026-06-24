@@ -30,7 +30,7 @@ async function getEvents() {
     // Handles removing entire array in case we call twice and putting all values in
     events = data.data;
   } catch (error) {
-    console.log("Error in getEvents:", e);
+    console.log("Error in getEvents:", error);
   }
   render();
 }
@@ -45,7 +45,7 @@ async function getEvent(id) {
     const data = await response.json();
     selectedEvent = data.data;
   } catch (error) {
-    console.log("Error in getEvent:");
+    console.log("Error in getEvent:", error);
   }
   render();
 }
@@ -93,7 +93,6 @@ function selectedEventSection() {
     `;
     return section;
   }
-  console.log(document.querySelector("ul"));
   section.innerHTML = `
   <h4>${selectedEvent.name} #${selectedEvent.id}</h4>
   <br>
