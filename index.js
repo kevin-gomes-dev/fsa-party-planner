@@ -8,6 +8,24 @@
  * @property {string} location
  */
 
+/**
+ * @typedef Rsvp
+ * @property {number} id
+ * @property {number} guestId
+ * @property {number} eventId
+ */
+
+/**
+ * @typedef Guest
+ * @property {number} id
+ * @property {string} name
+ * @property {string} email
+ * @property {string} phone
+ * @property {string} bio
+ * @property {string} job
+ *
+ */
+
 // === Constants ===
 const BASE = "https://fsa-crud-2aa9294fe819.herokuapp.com/api";
 const COHORT = "/2605-ftb-ct-web-pt";
@@ -15,8 +33,11 @@ const RESOURCE = "/events";
 const API = BASE + COHORT + RESOURCE;
 
 // === State ===
-let events = [];
 let selectedEvent;
+let selectedEventGuests = [];
+let guests = [];
+let rsvps = [];
+let events = [];
 
 // === Data ===
 
@@ -27,27 +48,79 @@ async function getEvents() {
   try {
     const response = await fetch(API);
     const data = await response.json();
-    // Handles removing entire array in case we call twice and putting all values in
     events = data.data;
   } catch (error) {
-    console.log("Error in getEvents:", e);
+    console.log("Error in getEvents:", error);
   }
-  render();
 }
+
+async function getGuests() {
+  try {
+    const response = await fetch(BASE + COHORT + "/guests");
+    const data = await response.json();
+    guests = data.data;
+  } catch (error) {
+    console.log("Error in getGuests:", error);
+  }
+}
+
+async function getRsvps() {
+  try {
+    const response = await fetch(BASE + COHORT + "/rsvps");
+    const data = await response.json();
+    rsvps = data.data;
+  } catch (error) {
+    console.log("Error in getRsbps:", error);
+  }
+}
+
+// Get all the RSVPs of an event. Then serach through them, finding all users. Use the user id to get their info from API
 
 /**
  * Get a single event from API for selected event
  * @param {number} id The id to use for API call
  */
-async function getEvent(id) {
+async function setSelectedEvent(id) {
   try {
     const response = await fetch(API + "/" + id);
     const data = await response.json();
     selectedEvent = data.data;
   } catch (error) {
-    console.log("Error in getEvent:");
+    console.log("Error in getEvent:", error);
   }
   render();
+}
+
+/**
+ * Get a single guest from API
+ * @param {number} id
+ */
+async function getGuest(id) {
+  try {
+    const response = await fetch(BASE + COHORT + "/guests/" + id);
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.log("Error in getGuest:", error);
+  }
+}
+
+/**
+ * Sets selected guest events
+ * @param {ConventionEvent} conventionEvent
+ */
+function setEventGuests(conventionEvent) {
+  // selectedEventGuests = [];
+  const eventRsvps = rsvps.filter((rsvp) => rsvp.eventId === conventionEvent.id);
+  //   return eventRsvps;
+  eventRsvps.map(async (rsvp) => {
+    try {
+      const guest = await getGuest(rsvp.guestId);
+      selectedEventGuests.push(guest);
+    } catch (error) {
+      console.log(error);
+    }
+  });
 }
 
 // === Components ===
@@ -55,6 +128,7 @@ async function getEvent(id) {
 /**
  * Returns a clickable li HTML element whose text is given event's name
  * @param {ConventionEvent} conventionEvent
+ * @returns {HTMLLIElement}
  */
 function eventListItem(conventionEvent) {
   const eventItem = document.createElement("li");
@@ -63,14 +137,42 @@ function eventListItem(conventionEvent) {
   eventLink.textContent = conventionEvent.name;
   eventLink.href = "#selected";
 
-  eventItem.addEventListener("click", () => getEvent(conventionEvent.id));
+  eventItem.addEventListener("click", () => {
+    setEventGuests(conventionEvent);
+    setSelectedEvent(conventionEvent.id);
+  });
   eventItem.id = "p" + conventionEvent.id;
   eventItem.append(eventLink);
   return eventItem;
 }
 
 /**
+ * Returns an li HTML element for a guest
+ * @param {Guest} guest
+ * @returns {HTMLLIElement}
+ */
+function guestListItem(guest) {
+  const guestItem = document.createElement("li");
+  guestItem.textContent = guest.name;
+  return guestItem;
+}
+
+/**
+ * Returns a ul HTML element for all guests of a particular event
+ * @param {ConventionEvent} conventionEvent
+ * @returns {HTMLUListElement}
+ */
+function guestUnorderedList(conventionEvent) {
+  const guestList = document.createElement("ul");
+  selectedEventGuests.forEach((guest) => {
+    guestList.append(guestListItem(guest));
+  });
+  return guestList;
+}
+
+/**
  * Returns an unordered list HTML element containing all items in events state
+ * @returns {HTMLUListElement}
  */
 function eventUnorderedList() {
   const eventList = document.createElement("ul");
@@ -93,7 +195,6 @@ function selectedEventSection() {
     `;
     return section;
   }
-  console.log(document.querySelector("ul"));
   section.innerHTML = `
   <h4>${selectedEvent.name} #${selectedEvent.id}</h4>
   <br>
@@ -101,8 +202,11 @@ function selectedEventSection() {
   <p>${selectedEvent.location}</p>
   <br>
   <p>${selectedEvent.description}</p>
+  <br>
+  <ul></ul>
 `;
   document.querySelector("#p" + selectedEvent.id).style.font = "italic small-caps bold 16px/2 arial";
+  section.querySelector("ul").replaceWith(guestUnorderedList(selectedEvent));
   return section;
 }
 
@@ -111,6 +215,9 @@ function selectedEventSection() {
  */
 async function init() {
   await getEvents();
+  await getGuests();
+  await getRsvps();
+  render();
 }
 
 function render() {
@@ -126,6 +233,7 @@ function render() {
     </section>
   </main
   `;
+  // console.log(selectedEvent);
   $app.querySelector("ul").replaceWith(eventUnorderedList());
   $app.querySelector("#selected").replaceWith(selectedEventSection());
 }
