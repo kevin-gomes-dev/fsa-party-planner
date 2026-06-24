@@ -1,4 +1,7 @@
 // To avoid conflicting with javascript's "Event", naming it different.
+// Get all the RSVPs of an event. Then serach through them, finding all users.
+// Use guest ID from RSVP in case the guest info changes - no stale data
+
 /**
  * @typedef ConventionEvent
  * @property {number} id
@@ -74,8 +77,6 @@ async function getRsvps() {
   }
 }
 
-// Get all the RSVPs of an event. Then serach through them, finding all users. Use the user id to get their info from API
-
 /**
  * Get a single event from API for selected event
  * @param {number} id The id to use for API call
@@ -109,18 +110,18 @@ async function getGuest(id) {
  * Sets selected guest events
  * @param {ConventionEvent} conventionEvent
  */
-function setEventGuests(conventionEvent) {
-  // selectedEventGuests = [];
+async function setEventGuests(conventionEvent) {
   const eventRsvps = rsvps.filter((rsvp) => rsvp.eventId === conventionEvent.id);
-  //   return eventRsvps;
-  eventRsvps.map(async (rsvp) => {
+  const guests = [];
+  eventRsvps.map((rsvp) => {
     try {
-      const guest = await getGuest(rsvp.guestId);
-      selectedEventGuests.push(guest);
+      guests.push(getGuest(rsvp.guestId));
     } catch (error) {
       console.log(error);
     }
   });
+  selectedEventGuests = await Promise.all(guests);
+  render();
 }
 
 // === Components ===
@@ -233,7 +234,6 @@ function render() {
     </section>
   </main
   `;
-  // console.log(selectedEvent);
   $app.querySelector("ul").replaceWith(eventUnorderedList());
   $app.querySelector("#selected").replaceWith(selectedEventSection());
 }
